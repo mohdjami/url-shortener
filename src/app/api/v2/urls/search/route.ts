@@ -1,4 +1,3 @@
-import db from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { NextResponse } from "next/server";
 

@@ -185,7 +185,7 @@ const SignUpForm = () => {
           )}{" "}
         </Button>
         <Button
-          className="items-center w-full mt-4 md:mt-8 lg:mt-10 block lg:hidden"
+          className="flex items-center w-full mt-6"
           type="submit"
           variant="outline"
         >
@@ -194,6 +194,7 @@ const SignUpForm = () => {
           ) : (
             "Sign up"
           )}{" "}
+
         </Button>
       </form>
       <div className="mx-auto my-4 flex w-full items-center justify-evenly before:mr-4 before:block before:h-px before:flex-grow before:bg-stone-400 after:ml-4 after:block after:h-px after:flex-grow after:bg-stone-400 dark:text-gray-600 ">

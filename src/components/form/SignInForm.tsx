@@ -68,11 +68,12 @@ const SignInForm = () => {
         //then we need to create a new user in the auth table
         //but we need to check the password before creating a new user in the auth table
 
-        const { data: authData, error: authError } = await supabase.auth.signUp(
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword(
           {
             email: values.email,
             password: values.password,
-          }
+          },
+          
         );
       }
       if (authError) {

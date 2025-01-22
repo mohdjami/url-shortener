@@ -2,8 +2,7 @@ import { customAlphabet } from "nanoid";
 import { randomBytes } from "crypto";
 import { createClient } from "@/supabase/server";
 import { redis } from "@/lib/redis";
-import { slugSchema } from "@/lib/validations/urls";
-import { findSlug, urlExists } from "@/lib/urls";
+import { slugSchema, UrlSchema } from "@/lib/validations/urls";
 import { NextResponse } from "next/server";
 
 interface URLRecord {
@@ -46,8 +45,10 @@ export class URLShortenerService {
           : null;
 
         const parsedCode = slugSchema.parse({ slug: code });
-        const slugExists = await findSlug(parsedCode.slug);
-        const urlExist = await urlExists(userId, originalURL);
+        const parsedUrl = UrlSchema.parse({ originalURL });
+
+        const slugExists = await this.findSlug(parsedCode.slug);
+        const urlExist = await this.urlExists(userId, parsedUrl.url);
         if (slugExists || urlExist) {
           NextResponse.json({
             error: `${slugExists} and ${urlExist} already exists`,
@@ -79,6 +80,7 @@ export class URLShortenerService {
         await this.redis.set(code, originalURL, "EX", 60 * 60 * 24 * 7); // expire in one week
         return code; // Return the generated code instead of originalURL
       } catch (error) {
+        console.log(error);
         attempts++;
         if (attempts === this.MAX_RETRIES) {
           throw new Error(
@@ -108,6 +110,72 @@ export class URLShortenerService {
     }
 
     return data.originalUrl;
+  }
+  async findSlug(slug: string) {
+    const { data: url, error } = await this.supabase
+      .from("Url")
+      .select("*")
+      .eq("shortUrl", slug)
+      .single();
+    if (error) {
+      console.log(error);
+      return null;
+    }
+    return url;
+  }
+
+  async urlExists(
+    userId: string,
+    parsedUrl?: string | null,
+    shortUrl?: string | null
+  ) {
+    try {
+      if (shortUrl) {
+        const { data: url, error } = await this.supabase
+          .from("Url")
+          .select("*")
+          .eq("shortUrl", shortUrl)
+          .eq("userId", userId)
+          .single();
+        if (error) {
+          console.log(error);
+          return null;
+        }
+        return url;
+      }
+      const { data: url, error } = await this.supabase
+        .from("Url")
+        .select("*")
+        .eq("originalUrl", parsedUrl)
+        .eq("userId", userId)
+        .single();
+      if (error) {
+        console.log(error);
+        return null;
+      }
+      return url;
+    } catch (error) {
+      return new Response(null, {
+        status: 500,
+      });
+    }
+  }
+  async getALLUrls(userId: string) {
+    try {
+      const { data: urls, error } = await this.supabase
+        .from("Url")
+        .select("*")
+        .eq("userId", userId);
+      if (error) {
+        console.log(error);
+        return null;
+      }
+      return urls;
+    } catch (error) {
+      return new Response(null, {
+        status: 500,
+      });
+    }
   }
 
   // Additional utility methods
